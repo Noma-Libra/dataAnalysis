@@ -95,6 +95,9 @@ def learing():
     x_train = [r[0:3] for r in record_list]
     y_train = [[r[-1]] for r in record_list]
 
+    print(x_train)
+    print(y_train)
+
     # Define Sequential model and Dense
     model = tf.keras.models.Sequential()
     model.add(tf.keras.layers.Dense(1, input_shape=(3,)))

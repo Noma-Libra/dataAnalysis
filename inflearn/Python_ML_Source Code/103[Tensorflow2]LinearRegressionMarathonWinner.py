@@ -104,6 +104,9 @@ def learing():
     x_train = [i/10 for i in xData[0:7]]
     y_train = record_list[t_a-1][0:7]
 
+    print(x_train)
+    print(y_train)
+
     # Define Sequential model and Dense
     model = tf.keras.models.Sequential()
     model.add(tf.keras.layers.Dense(1, input_dim=1))
