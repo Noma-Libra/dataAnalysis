@@ -26,11 +26,12 @@ mpl.rcParams['axes.grid'] = False
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 LOG_DIR = os.path.join(BASE_DIR, 'log')
+MODEL_DIR = os.path.join(BASE_DIR, 'model')
 
 # KEY_WORD = '716adcd0325d3422673e820e4cced01f7d84339dc948aafe883f94460cf3de55'
 # 각 Token(키워드)의 Y(설치 수) 를 예측하는 모델을 만들기 위한 키워드
 
-TRAIN_SPLIT = '2019-07-20'
+TRAIN_SPLIT = '2019-07-19'
 # 트레이닝 셋으로 이용할 데이터의 양을 지정, 해당 데이터셋은 각 키워드별로 일자를 가지고 있기 때문에 인수를 날짜로 한다.
 
 TRAIN_DATE = pd.to_datetime(TRAIN_SPLIT, format='%Y-%m-%d')
@@ -92,8 +93,9 @@ def preprocessing_dataframe(dataset):
     return prep_dataset
 
 def df_to_dataset(dataframe, window_size=5):
+    #수정 필요
     FEAUTRES_COLS = ['a','b','c','d','e','f','g','h']
-    LABELS_COLS = ['Y']
+    LABELS_COLS = dataframe['Y']
 
     START_DATE = dataframe.index.min()
     END_DATE = dataframe.index.max() - timedelta(days=window_size)
@@ -105,16 +107,38 @@ def df_to_dataset(dataframe, window_size=5):
     for date in pd.date_range(start=START_DATE, end=END_DATE):
         window = (date + timedelta(days=window_size)).strftime('%Y-%m-%d')
         date = date.strftime('%Y-%m-%d')
-        print(window,date)
+        print(f'{date} ~ {window}')
         
         list_feature.append(np.array(dataframe.loc[date:window, FEAUTRES_COLS]))
-        list_label.append(np.array(dataframe.loc[date:window, LABELS_COLS]))
+        list_label.append(np.array(dataframe.loc[date:window, 'Y']))
 
     return np.array(list_feature), np.array(list_label)
 
-def make_model():
+def make_model(feature):
+    model = Sequential()
+
+    model.add(LSTM(16, 
+               input_shape=(feature.shape[1], feature.shape[2]), 
+               activation='relu', 
+               return_sequences=False)
+          )
+    model.add(Dense(1))
    
-    return 0
+    return model
+
+def learning(model, x_train, y_train, x_valid, y_valid, MODEL_FILE_NAME='TEMP.h5'):
+    model.summary()
+    model.compile(loss='mean_squared_error', optimizer='adam',metrics=["accuracy"])
+    early_stop = EarlyStopping(monitor='val_loss', patience=5)
+    filename = os.path.join(MODEL_DIR, MODEL_FILE_NAME)
+    checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
+
+    history = model.fit(x_train, y_train, 
+                        epochs=200, 
+                        batch_size=36,
+                        validation_data=(x_valid, y_valid), 
+                        callbacks=[early_stop, checkpoint])
+    return history, filename
 
 if __name__ == "__main__":
     userlog = pd.read_csv(os.path.join(DATA_DIR, 'log_1907.csv'),header=0, parse_dates=['date'], date_parser=lambda x : pd.to_datetime(x, format='%Y-%m-%d'))
@@ -126,43 +150,19 @@ if __name__ == "__main__":
 
     train_feature, train_label = df_to_dataset(train)
     x_train, x_valid, y_train, y_valid = train_test_split(train_feature, train_label, test_size=0.2)
-    print(train_feature.shape, train_label.shape)
 
-    print(test.head)
+    # print(train_feature)
+
     test_feature, test_label = df_to_dataset(test)
-    print(test_feature.shape, test_label.shape)
+    # print(test_label)
+    
 
-    # model = Sequential()
-    # model.add(LSTM(16, 
-    #            input_shape=(train_feature.shape[1], train_feature.shape[2]), 
-    #            activation='relu', 
-    #            return_sequences=False)
-    #       )
-    # model.add(Dense(1))
-
-    # model_path = 'model'
-
-    # model.compile(loss='mean_squared_error', optimizer='adam')
-    # early_stop = EarlyStopping(monitor='val_loss', patience=5)
-    # filename = os.path.join(model_path, 'tmp_checkpoint.h5')
-    # checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
-
-    # history = model.fit(x_train, y_train, 
-    #                     epochs=200, 
-    #                     batch_size=16,
-    #                     validation_data=(x_valid, y_valid), 
-    #                     callbacks=[early_stop, checkpoint])
-
+    train_model = make_model(train_feature)
+    history, file_name = learning(train_model, x_train, y_train, x_valid, y_valid)
     # model.load_weights(filename)
 
     # 예측
-    pred = model.predict(test_feature)
-    print(pred.shape)
-
-    plt.figure(figsize=(12, 9))
-    plt.plot(test_label, label='actual')
-    plt.plot(pred, label='prediction')
-    plt.legend()
-    plt.show()
-
+    pred = train_model.predict(test_feature)
+    print(pred)
+    print(test_label)
 # %%
