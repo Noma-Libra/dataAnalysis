@@ -1,4 +1,4 @@
-"""buzzni_restapi URL Configuration
+"""buzzni_api URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/3.1/topics/http/urls/
@@ -15,9 +15,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from django.conf.urls import include
+
+from django.conf.urls import url, include
+from rest_framework import routers
+from rest_framework_swagger.views import get_swagger_view
+
+import keras.api 
+
+router = routers.DefaultRouter()
+router.register('keyword', keras.api.KeywordViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('keywords/', include('api_keyword.urls'), name='api_keyword'),
+
+    url(r'^api/doc/', get_swagger_view(title='Rest API Document')),
+    url(r'^api/v1/', include((router.urls, 'keras'), namespace='api')),
 ]

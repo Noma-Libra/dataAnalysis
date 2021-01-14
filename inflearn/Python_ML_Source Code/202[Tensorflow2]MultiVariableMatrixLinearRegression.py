@@ -92,11 +92,11 @@ def learing():
     t_r = float(t_rSpbox.get())
 
     # X and Y data from 0km to 30km
-    x_train = [r[0:3] for r in record_list]
+    x_train = np.array([r[0:3] for r in record_list])
     y_train = [[r[-1]] for r in record_list]
 
     print(x_train)
-    print(y_train)
+    print(x_train.shape)
 
     # Define Sequential model and Dense
     model = tf.keras.models.Sequential()

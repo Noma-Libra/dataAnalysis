@@ -154,9 +154,9 @@ def main():
     
     model = tf.keras.Sequential([
     feature_layer,
-    layers.Dense(128, activation='relu'),
-    layers.Dense(128, activation='relu'),
-    layers.Dense(1, activation='sigmoid')
+        layers.Dense(128, activation='relu'),
+        layers.Dense(128, activation='relu'),
+        layers.Dense(1, activation='sigmoid')
     ])
 
     model.compile(optimizer='adam',
@@ -171,7 +171,6 @@ def main():
     print("정확도", accuracy)
     predY = model.predict(test_ds)
     print(predY)
-    
 
     feature_cols = ['a','b','c','d','e','f','g','h']
     label_cols = ['Y']
