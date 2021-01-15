@@ -1,5 +1,5 @@
 {
   "python.pythonPath": "C:\\Users\\sungh\\anaconda3\\python.exe",
   // "python.pythonPath": "C:\\Users\\sungh\\anaconda3\\envs\\buzzni_env\\python.exe",
-  "python.formatting.provider": "black"
+  "python.formatting.provider": "autopep8"
 }
