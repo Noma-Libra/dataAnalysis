@@ -58,7 +58,6 @@ def dataset_normalization():
 
 
 class TimeWindow():
-    split_window = 0
     """
         TimeWindow
     """
@@ -115,7 +114,7 @@ class TimeWindow():
             self.labels_slice]
 
     def split_window(self, features):
-        # print(features)
+        print(features)
         """
             Params
                 @features (batch, time, features)
@@ -138,7 +137,8 @@ class TimeWindow():
 
         inputs.set_shape([None, self.input_width, None])
         labels.set_shape([None, self.label_width, None])
-
+        print(inputs)
+        print(labels)
         return inputs, labels
 
     def make_dataset(self, data):
@@ -163,6 +163,17 @@ class TimeWindow():
     @property
     def test(self):
         return self.make_dataset(self.test_df)
+
+    @property
+    def example(self):
+        """Get and cache an example batch of `inputs, labels` for plotting."""
+        result = getattr(self, '_example', None)
+        if result is None:
+            # No example batch was found, so get one from the `.train` dataset
+            result = next(iter(self.train))
+            # And cache it for next time
+            self._example = result
+        return result
 
     def __repr__(self):
         return '\n'.join([
@@ -198,6 +209,39 @@ def compile_and_fit(model, window, patience=2):
     return history
 
 
+def plot(self, model=None, plot_col='Y', max_subplots=3):
+    inputs, labels = self.example
+    plt.figure(figsize=(12, 8))
+    plot_col_index = self.column_indices[plot_col]
+    max_n = min(max_subplots, len(inputs))
+    for n in range(max_n):
+        plt.subplot(3, 1, n+1)
+        plt.ylabel(f'{plot_col} [normed]')
+        plt.plot(self.input_indices, inputs[n, :, plot_col_index],
+                 label='Inputs', marker='.', zorder=-10)
+
+        if self.label_columns:
+            label_col_index = self.label_columns_indices.get(plot_col, None)
+        else:
+            label_col_index = plot_col_index
+
+        if label_col_index is None:
+            continue
+
+        plt.scatter(self.label_indices, labels[n, :, label_col_index],
+                    edgecolors='k', label='Labels', c='#2ca02c', s=64)
+        if model is not None:
+            predictions = model(inputs)
+            plt.scatter(self.label_indices, predictions[n, :, label_col_index],
+                        marker='X', edgecolors='k', label='Predictions',
+                        c='#ff7f0e', s=64)
+
+        if n == 0:
+            plt.legend()
+
+    plt.xlabel('Date')
+
+
 if __name__ == "__main__":
     userlog = pd.read_csv(os.path.join(DATA_DIR, 'log_1907.csv'), header=0, parse_dates=[
                           'date'], date_parser=lambda x: pd.to_datetime(x, format='%Y-%m-%d'))
@@ -212,11 +256,11 @@ if __name__ == "__main__":
     # Feature의 갯수 -> [a ,b ,c ,d, ,e, f, g, h]
     # print(NUMBER_FEATURE)
 
-    train_df = df[0:int(NUMBER_TIME*0.6)]
-    # 트레이닝 셋 ( 60 % )
+    train_df = df[0:int(NUMBER_TIME*0.7)]
+    # 트레이닝 셋 ( 70 % )
 
-    test_df = df[int(NUMBER_TIME*0.6):]
-    # 테스트 셋 ( 40 % )
+    test_df = df[int(NUMBER_TIME*0.7):]
+    # 테스트 셋 ( 30 % )
 
     train_mean = train_df.mean()
     train_std = train_df.std()
@@ -224,11 +268,14 @@ if __name__ == "__main__":
     train_df = (train_df - train_mean) / train_std
     test_df = (test_df - train_mean) / train_std
 
-    wide_window = TimeWindow(train_df, test_df,
-                             input_width=5, label_width=2, shift=7,
-                             label_columns=['Y'])
+    print(train_df)
 
+    wide_window = TimeWindow(train_df, test_df,
+                             input_width=5, label_width=2, shift=2,
+                             label_columns=['Y'])
     print(wide_window)
+    print(wide_window.train.element_spec)
+    # print(wide_window.train)
 
     """
         i.e.,

@@ -92,11 +92,13 @@ def df_to_dataset(dataframe):
 
 
 def make_model(feature):
+    print(feature.shape)
     model = keras.Sequential()
-    model.add(LSTM(1,
-                   input_shape=(feature.shape[1], feature.shape[2]),
-                   activation='relu',
-                   return_sequences=False)
+    model.add(keras.layers.LSTM(1,
+                                batch_input_shape=(
+                                    feature.shape[0], feature.shape[1], feature.shape[2]),
+                                activation='relu',
+                                return_sequences=False)
               )
     model.summary()
     return model
@@ -114,9 +116,20 @@ class Baseline(tf.keras.Model):
         return result[:, :, tf.newaxis]
 
 
-def learning(model, x_train, y_train, x_valid, y_valid, MODEL_FILE_NAME='TEMP.h5', patience=2):
+def learning(model, x_train, y_train, x_valid, y_valid, MODEL_FILE_NAME='TEMP.h5'):
+    model.compile(loss='mean_squared_error', optimizer='adam')
+    early_stop = EarlyStopping(monitor='val_loss', patience=5)
+    filename = os.path.join(MODEL_DIR, 'tmp_checkpoint.h5')
+    checkpoint = ModelCheckpoint(
+        filename, monitor='val_loss', verbose=1, save_best_only=True, mode='auto')
 
-    return 0
+    history = model.fit(x_train, y_train,
+                        epochs=200,
+                        batch_size=16,
+                        validation_data=(x_valid, y_valid),
+                        callbacks=[early_stop, checkpoint])
+
+    return history
 
 
 if __name__ == "__main__":
@@ -140,6 +153,10 @@ if __name__ == "__main__":
         전체 데이터 셋에 80% 를 트레이닝 셋으로 20% 를 테스트 셋으로 Split
 
     """
+
+    model = make_model(train_feature)
+    history = learning(model, train_feature, train_label,
+                       valid_feature, valid_label)
 
     # (16, 5, 9) (16, 1, 1) // (batch, days, input col num) (batch, days, output col num)
 

@@ -109,6 +109,8 @@ def preprocessing_dataframe(dataset):
 
 def df_to_dataset(dataframe):
     # 수정 필요
+    for x in dataframe:
+        print(x)
     FEAUTRES_COLS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
     LABELS_COLS = ['Y']
 
@@ -124,8 +126,8 @@ def df_to_dataset(dataframe):
 def make_model(feature):
     model = keras.Sequential(
         [
-            keras.Input(shape=(feature.shape[1],)),
             layers.Dense(1,  activation='relu', name="keyword_layer"),
+
         ]
     )
     model.summary()
